@@ -1,7 +1,5 @@
 <?php
-if (!defined('TYPO3_MODE')) {
-	die ('Access denied.');
-}
+defined('TYPO3_MODE') or die();
 
 $_EXTCONF = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][$_EXTKEY]);
 
@@ -14,23 +12,38 @@ if ($_EXTCONF['enableBE']) {
 	$GLOBALS['TYPO3_CONF_VARS']['SVCONF']['auth']['setup']['BE_fetchUserIfNoSession'] = $_EXTCONF['BE_fetchUserIfNoSession'];
 
 	if (TYPO3_MODE == 'BE') {
-		$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_userauth.php']['logoff_post_processing'][] = 'EXT:' . $_EXTKEY . '/hooks/class.tx_shibbolethauth_userauth.php:tx_shibbolethauth_userauth->logoutBE';
+		// Register backend logout handler
+		$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_userauth.php']['logoff_post_processing'][] = 'PHLU\\ShibbolethAuth\\Hook\\UserAuthentication->backendLogoutHandler';
 	}
 }
 
 if ($_EXTCONF['enableFE']) {
+	// Register FE user authentication subtypes
 	$subTypes[] = 'getUserFE';
 	$subTypes[] = 'authUserFE';
 
-	\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addPItoST43($_EXTKEY, 'pi1/class.tx_shibbolethauth_pi1.php', '_pi1', 'list_type', 0);
+	// Register FE plugin
+	\TYPO3\CMS\Extbase\Utility\ExtensionUtility::configurePlugin(
+		'PHLU.' . $_EXTKEY,
+		'Login',
+		array(
+			'FrontendLogin' => 'index,login,loginSuccess,logout,logoutSuccess',
+		),
+		// non-cacheable actions
+		array(
+			'FrontendLogin' => 'index,loginSuccess,logoutSuccess',
+		)
+	);
 
+	// Configure if session should be fetched on each page load
 	$GLOBALS['TYPO3_CONF_VARS']['SVCONF']['auth']['setup']['FE_fetchUserIfNoSession'] = $_EXTCONF['FE_fetchUserIfNoSession'];
 }
 
-\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addService($_EXTKEY, 'auth', 'tx_shibbolethauth_sv1',
+// Register authentication service
+\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addService($_EXTKEY, 'auth', 'PHLU\\ShibbolethAuth\\Typo3\\Service\\ShibbolethAuthenticationService',
 	array(
 		'title' => 'Shibboleth-Authentication',
-		'description' => 'Authentication service for Shibboleth (BE & FE)',
+		'description' => 'Shibboleth Authentication service (BE & FE)',
 
 		'subtype' => implode(',', $subTypes),
 
@@ -41,9 +54,8 @@ if ($_EXTCONF['enableFE']) {
 		'os' => '',
 		'exec' => '',
 
-		'classFile' => \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::extPath($_EXTKEY) . 'sv1/class.tx_shibbolethauth_sv1.php',
-		'className' => 'tx_shibbolethauth_sv1',
+		'className' => 'PHLU\\ShibbolethAuth\\Typo3\\Service\\ShibbolethAuthenticationService',
 	)
 );
 
-?>
+unset($_EXTCONF);

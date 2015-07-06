@@ -1,44 +1,45 @@
 <?php
-/***************************************************************
- *  Copyright notice
- *
- *  (c) 2011 Tamer Erdoğan <tamer.erdogan@univie.ac.at>
- *  All rights reserved
- *
- *  This script is part of the TYPO3 project. The TYPO3 project is
- *  free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- *
- *  The GNU General Public License can be found at
- *  http://www.gnu.org/copyleft/gpl.html.
- *
- *  This script is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  This copyright notice MUST APPEAR in all copies of the script!
- ***************************************************************/
-use TYPO3\CMS\Core\Utility\GeneralUtility;
-
+namespace PHLU\ShibbolethAuth\Typo3\Service;
 
 /**
- * Service "Shibboleth Authentication" for the "tx_shibbolethauth" extension.
+ * This file is part of the TYPO3 CMS project.
  *
- * @author    Tamer Erdoğan <tamer.erdogan@univie.ac.at>
- * @author    Lorenz Ulrich <lorenz.ulrich@visol.ch>
- * @package    TYPO3
- * @subpackage    tx_shibbolethauth
+ * It is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License, either version 2
+ * of the License, or any later version.
+ *
+ * For the full copyright and license information, please read the
+ * LICENSE.txt file that was distributed with this source code.
+ *
+ * The TYPO3 project - inspiring people to share!
  */
-class tx_shibbolethauth_sv1 extends \TYPO3\CMS\Sv\AbstractAuthenticationService {
-	public $prefixId = 'tx_shibbolethauth_sv1'; // Same as class name
-	public $scriptRelPath = 'sv1/class.tx_shibbolethauth_sv1.php'; // Path to this script relative to the extension dir.
-	public $extKey = 'shibboleth_auth'; // The extension key.
+
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+
+class ShibbolethAuthenticationService extends \TYPO3\CMS\Sv\AbstractAuthenticationService {
+
+	public $prefixId = 'shibboleth_auth';
+
+	/**
+	 * The extension key
+	 *
+	 * @var string
+	 */
+	public $extKey = 'shibboleth_auth';
+
+	/**
+	 * @var \TYPO3\CMS\Core\Authentication\AbstractUserAuthentication
+	 */
 	public $pObj;
 
+	/**
+	 * @var array
+	 */
 	protected $extConf;
+
+	/**
+	 * @var string
+	 */
 	protected $remoteUser;
 
 	/**
@@ -46,7 +47,7 @@ class tx_shibbolethauth_sv1 extends \TYPO3\CMS\Sv\AbstractAuthenticationService 
 	 *
 	 * @return    void
 	 */
-	function init() {
+	public function init() {
 		$this->extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][$this->extKey]);
 		if (empty($this->extConf['remoteUser'])) $this->extConf['remoteUser'] = 'REMOTE_USER';
 		$this->remoteUser = $_SERVER[$this->extConf['remoteUser']];
@@ -56,13 +57,13 @@ class tx_shibbolethauth_sv1 extends \TYPO3\CMS\Sv\AbstractAuthenticationService 
 	/**
 	 * Initialize authentication service
 	 *
-	 * @param    string $mode        Subtype of the service which is used to call the service.
-	 * @param    array $loginData        Submitted login form data
-	 * @param    array $authInfo        Information array. Holds submitted form data etc.
-	 * @param    object $pObj        Parent object
+	 * @param    string $mode Subtype of the service which is used to call the service.
+	 * @param    array $loginData Submitted login form data
+	 * @param    array $authInfo Information array. Holds submitted form data etc.
+	 * @param    object $pObj Parent object
 	 * @return    mixed
 	 */
-	function initAuth($mode, $loginData, $authInfo, $pObj) {
+	public function initAuth($mode, $loginData, $authInfo, $pObj) {
 
 		if (defined('TYPO3_cliMode')) {
 			return parent::initAuth($mode, $loginData, $authInfo, $pObj);
@@ -76,24 +77,6 @@ class tx_shibbolethauth_sv1 extends \TYPO3\CMS\Sv\AbstractAuthenticationService 
 		$this->login = $loginData;
 		if (empty($this->login['uname']) && empty($this->remoteUser)) {
 			return parent::initAuth($mode, $loginData, $authInfo, $pObj);
-			/*			$target = t3lib_div::getIndpEnv('TYPO3_REQUEST_URL');
-						$target = t3lib_div::removeXSS($target);
-						if ($this->extConf['forceSSL'] && !t3lib_div::getIndpEnv('TYPO3_SSL')) {
-							$target = str_ireplace('http:', 'https:', $target);
-							if (!preg_match('#["<>\\\]+#', $target)) {
-								t3lib_utility_Http::redirect($target);
-							}
-						}
-
-						if (TYPO3_MODE == 'FE') {
-							if(stristr($target, '?') === FALSE) $target .= '?';
-							else $target .= '&';
-							$target .= 'logintype=login&pid='.$this->extConf['storagePid'];
-						}
-						$redirectUrl = $this->extConf['loginHandler']; //. '?target=' . rawurlencode($target);
-						$redirectUrl = t3lib_div::sanitizeLocalUrl($redirectUrl);
-
-						t3lib_utility_Http::redirect($redirectUrl);*/
 		} else {
 			$loginData['status'] = 'login';
 
@@ -101,9 +84,13 @@ class tx_shibbolethauth_sv1 extends \TYPO3\CMS\Sv\AbstractAuthenticationService 
 		}
 	}
 
-	function getUser() {
+	public function getUser() {
 		$user = FALSE;
 		if ($this->login['status'] == 'login' && $this->isShibbolethLogin() && empty($this->login['uname'])) {
+			$storagePid = GeneralUtility::_GP('pid');
+			if (empty($storagePid)) {
+				GeneralUtility::_GETset($this->extConf['storagePid'], 'pid');
+			}
 			$user = $this->fetchUserRecord($this->remoteUser);
 			if (!is_array($user) || empty($user)) {
 				if ($this->authInfo['loginType'] == 'FE' && !empty($this->remoteUser) && $this->extConf['enableAutoImport']) {
@@ -127,6 +114,8 @@ class tx_shibbolethauth_sv1 extends \TYPO3\CMS\Sv\AbstractAuthenticationService 
 				$user = $this->fetchUserRecord($this->remoteUser);
 			}
 		}
+
+		/* Deny Backend login for Non-Shibboleth authentication when onlyShibbolethFunc is set */
 		if (!defined('TYPO3_cliMode') && $this->authInfo['loginType'] == 'BE' && $this->extConf['onlyShibbolethBE'] && empty($user)) {
 
 			if (is_array($GLOBALS['TYPO3_CONF_VARS']['EXTCONF'][$this->extKey]['onlyShibbolethFunc'])) {
@@ -135,8 +124,8 @@ class tx_shibbolethauth_sv1 extends \TYPO3\CMS\Sv\AbstractAuthenticationService 
 					$_procObj->onlyShibbolethFunc($this->remoteUser);
 				}
 			} else {
-				/** @var $messageObj t3lib_message_ErrorPageMessage */
-				$messageObj = GeneralUtility::makeInstance('t3lib_message_ErrorPageMessage', '<p>User (' . $this->remoteUser . ') not found!</p><p><a href="' . $this->extConf['logoutHandler'] . '">Shibboleth Logout</a></p>', 'Login error');
+				/** @var $messageObj \TYPO3\CMS\Core\Messaging\ErrorpageMessage */
+				$messageObj = GeneralUtility::makeInstance('TYPO3\CMS\Core\Messaging\ErrorpageMessage', '<p>User (' . $this->remoteUser . ') not found!</p><p><a href="' . $this->extConf['logoutHandler'] . '">Shibboleth Logout</a></p>', 'Login error');
 				$messageObj->output();
 			}
 			foreach ($_COOKIE as $key => $val) unset($_COOKIE[$key]);
@@ -157,7 +146,7 @@ class tx_shibbolethauth_sv1 extends \TYPO3\CMS\Sv\AbstractAuthenticationService 
 	 * @param    array        Array containing FE user data of the logged user.
 	 * @return    integer        authentication statuscode, one of 0,100 and 200
 	 */
-	function authUser($user) {
+	public function authUser($user) {
 		$OK = 100;
 
 		if (defined('TYPO3_cliMode')) {
@@ -179,20 +168,14 @@ class tx_shibbolethauth_sv1 extends \TYPO3\CMS\Sv\AbstractAuthenticationService 
 				}
 				$OK = 0;
 			}
-		} /*else {
-			// Failed login attempt (wrong password) - write that to the log!
-			if ($this->writeAttemptLog) {
-				$this->writelog(255,3,3,1,
-					"Login-attempt from %s (%s), username '%s', password not accepted!",
-					array($this->info['REMOTE_ADDR'], $this->info['REMOTE_HOST'], $this->remoteUser));
-				t3lib_div::sysLog(sprintf("Login-attempt from %s (%s), username '%s', password not accepted!", $this->authInfo['REMOTE_ADDR'], $this->authInfo['REMOTE_HOST'], $this->remoteUser), $this->extKey, 0 );
-			}
-			//$OK = 0;
-		}*/
+		}
 
 		return $OK;
 	}
 
+	/**
+	 * Creates a new FE user from the current Shibboleth data
+	 */
 	protected function importFEUser() {
 		$this->writelog(255, 3, 3, 2, "Importing user %s!", array($this->remoteUser));
 
@@ -209,7 +192,9 @@ class tx_shibbolethauth_sv1 extends \TYPO3\CMS\Sv\AbstractAuthenticationService 
 	}
 
 	/**
-	 * @return    boolean
+	 * Updates an existing FE user with the current data provided by Shibboleth, matched be the uniqueId
+	 *
+	 * @return boolean
 	 */
 	protected function updateFEUser() {
 		$this->writelog(255, 3, 3, 2, "Updating user %s!", array($this->remoteUser));
@@ -225,6 +210,13 @@ class tx_shibbolethauth_sv1 extends \TYPO3\CMS\Sv\AbstractAuthenticationService 
 		$GLOBALS['TYPO3_DB']->exec_UPDATEquery($this->authInfo['db_user']['table'], $where, $user);
 	}
 
+	/**
+	 * Fetches all affiliations from the Shibboleth user
+	 * Creates a user group for each affiliation if it doesn't exist yet and returns a list of all user groups to be
+	 * assigned to the user
+	 *
+	 * @return string
+	 */
 	protected function getFEUserGroups() {
 		$feGroups = array();
 		$eduPersonAffiliation = $this->getServerVar($this->extConf['eduPersonAffiliation']);
@@ -261,12 +253,20 @@ class tx_shibbolethauth_sv1 extends \TYPO3\CMS\Sv\AbstractAuthenticationService 
 	}
 
 	/**
-	 * @return    boolean
+	 * @return boolean
 	 */
 	protected function isShibbolethLogin() {
 		return isset($_SERVER['AUTH_TYPE']) && (strtolower($_SERVER['AUTH_TYPE']) == 'shibboleth') && !empty($this->remoteUser);
 	}
 
+	/**
+	 * Returns the requested variable from $_SERVER
+	 * Falls back to the prefixed version (e.g. $_SERVER['REDIRECT_affiliation'] instead of $_SERVER['affiliation'] if needed
+	 *
+	 * @param $key
+	 * @param string $prefix
+	 * @return string|NULL
+	 */
 	protected function getServerVar($key, $prefix = 'REDIRECT_') {
 		if (isset($_SERVER[$key])) {
 			return $_SERVER[$key];

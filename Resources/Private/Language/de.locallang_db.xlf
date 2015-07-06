@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<xliff version="1.0">
+	<file source-language="en" target-language="de" datatype="plaintext" original="messages" date="2015-05-11T15:04:07Z" product-name="shibboleth_auth">
+		<header/>
+		<body>
+			<trans-unit id="tt_content.list_type_pi1" xml:space="preserve" approved="yes">
+				<source>Shibboleth Login</source>
+				<target>Shibboleth Anmeldung</target>
+			</trans-unit>
+		</body>
+	</file>
+</xliff>

@@ -1,0 +1,7 @@
+plugin.tx_shibbolethauth {
+	view {
+		templateRootPath = {$plugin.tx_shibbolethauth.view.templateRootPath}
+		partialRootPath = {$plugin.tx_shibbolethauth.view.partialRootPath}
+		layoutRootPath = {$plugin.tx_shibbolethauth.view.layoutRootPath}
+	}
+}

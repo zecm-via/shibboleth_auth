@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<xliff version="1.0">
+	<file source-language="en" datatype="plaintext" original="messages" date="2015-05-11T15:04:07Z" product-name="shibboleth_auth">
+		<header/>
+		<body>
+			<trans-unit id="pluginLabel">
+				<source>Shibboleth Login</source>
+			</trans-unit>
+			<trans-unit id="flexform.sheetTitle">
+				<source>Configuration</source>
+			</trans-unit>
+			<trans-unit id="flexform.redirectPage">
+				<source>Redirect to page</source>
+			</trans-unit>
+		</body>
+	</file>
+</xliff>
