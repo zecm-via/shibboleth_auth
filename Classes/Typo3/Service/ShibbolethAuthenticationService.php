@@ -50,6 +50,7 @@ class ShibbolethAuthenticationService extends \TYPO3\CMS\Sv\AbstractAuthenticati
 	public function init() {
 		$this->extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][$this->extKey]);
 		if (empty($this->extConf['remoteUser'])) $this->extConf['remoteUser'] = 'REMOTE_USER';
+		if (empty($this->extConf['displayName'])) $this->extConf['displayName'] = 'REMOTE_USER';
 		$this->remoteUser = $_SERVER[$this->extConf['remoteUser']];
 		return parent::init();
 	}
