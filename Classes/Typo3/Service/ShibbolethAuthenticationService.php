@@ -189,7 +189,7 @@ class ShibbolethAuthenticationService extends \TYPO3\CMS\Sv\AbstractAuthenticati
 			'name' => $this->getServerVar($this->extConf['displayName']),
 			'usergroup' => $this->getFEUserGroups(),
 		);
-		$GLOBALS['TYPO3_DB']->exec_INSERTquery($this->authInfo['db_user']['table'], $user);
+		$this->getDatabaseConnection()->exec_INSERTquery($this->authInfo['db_user']['table'], $user);
 	}
 
 	/**
@@ -208,7 +208,7 @@ class ShibbolethAuthenticationService extends \TYPO3\CMS\Sv\AbstractAuthenticati
 			'name' => $this->getServerVar($this->extConf['displayName']),
 			'usergroup' => $this->getFEUserGroups(),
 		);
-		$GLOBALS['TYPO3_DB']->exec_UPDATEquery($this->authInfo['db_user']['table'], $where, $user);
+		$this->getDatabaseConnection()->exec_UPDATEquery($this->authInfo['db_user']['table'], $where, $user);
 	}
 
 	/**
@@ -221,6 +221,7 @@ class ShibbolethAuthenticationService extends \TYPO3\CMS\Sv\AbstractAuthenticati
 	protected function getFEUserGroups() {
 		$feGroups = array();
 		$eduPersonAffiliation = $this->getServerVar($this->extConf['eduPersonAffiliation']);
+
 		if (empty($eduPersonAffiliation)) $eduPersonAffiliation = 'member';
 		if (!empty($eduPersonAffiliation)) {
 			$affiliation = explode(';', $eduPersonAffiliation);
@@ -228,17 +229,17 @@ class ShibbolethAuthenticationService extends \TYPO3\CMS\Sv\AbstractAuthenticati
 
 			// insert the affiliations in fe_groups if they are not there.
 			foreach ($affiliation as $title) {
-				$dbres = $GLOBALS['TYPO3_DB']->exec_SELECTquery('uid, title',
+				$dbres = $this->getDatabaseConnection()->exec_SELECTquery('uid, title',
 					$this->authInfo['db_groups']['table'],
 					"deleted = 0 AND pid = " . $this->extConf['storagePid'] . " AND title = '$title'");
-				if ($row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($dbres)) {
+				if ($row = $this->getDatabaseConnection()->sql_fetch_assoc($dbres)) {
 					$feGroups[] = $row['uid'];
 				} else {
 					$group = array('title' => $title, 'pid' => $this->extConf['storagePid']);
-					$GLOBALS['TYPO3_DB']->exec_INSERTquery($this->authInfo['db_groups']['table'], $group);
-					$feGroups[] = $GLOBALS['TYPO3_DB']->sql_insert_id();
+					$this->getDatabaseConnection()->exec_INSERTquery($this->authInfo['db_groups']['table'], $group);
+					$feGroups[] = $this->getDatabaseConnection()->sql_insert_id();
 				}
-				if ($dbres) $GLOBALS['TYPO3_DB']->sql_free_result($dbres);
+				if ($dbres) $this->getDatabaseConnection()->sql_free_result($dbres);
 			}
 		}
 
@@ -249,7 +250,6 @@ class ShibbolethAuthenticationService extends \TYPO3\CMS\Sv\AbstractAuthenticati
 				$feGroups = $_procObj->getFEUserGroups($feGroups);
 			}
 		}
-
 		return implode(',', $feGroups);
 	}
 
@@ -281,5 +281,12 @@ class ShibbolethAuthenticationService extends \TYPO3\CMS\Sv\AbstractAuthenticati
 			}
 		}
 		return NULL;
+	}
+
+	/**
+	 * @return \TYPO3\CMS\Core\Database\DatabaseConnection
+	 */
+	protected function getDatabaseConnection() {
+		return $GLOBALS['TYPO3_DB'];
 	}
 }
