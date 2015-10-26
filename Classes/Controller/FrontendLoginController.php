@@ -86,7 +86,8 @@ class FrontendLoginController extends \TYPO3\CMS\Extbase\Mvc\Controller\ActionCo
 			$target .= '&';
 		}
 		$target .= 'logintype=login&pid=' . $this->extensionConfiguration['storagePid'];
-		$shibbolethLoginUri = $this->extensionConfiguration['loginHandler'] . '?target=' . rawurlencode($target);
+		$queryStringSeparator = !strpos($target, '?') ? '?' : '&';
+		$shibbolethLoginUri = $this->extensionConfiguration['loginHandler'] . $queryStringSeparator . 'target=' . rawurlencode($target);
 		$shibbolethLoginUri = GeneralUtility::sanitizeLocalUrl($shibbolethLoginUri);
 		$this->view->assign('shibbolethLoginUri', $shibbolethLoginUri);
 	}
