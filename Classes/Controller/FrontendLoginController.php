@@ -80,14 +80,15 @@ class FrontendLoginController extends \TYPO3\CMS\Extbase\Mvc\Controller\ActionCo
 				HttpUtility::redirect($target);
 			}
 		}
-		if (stristr($target, '?') === FALSE) {
-			$target .= '?';
-		} else {
-			$target .= '&';
-		}
+
+		// If the target page already includes an exclamation sign (e.g. non-RealURL page), we must use an ampersand here
+		$target .= !strpos($target, '?') ? '?' : '&';
 		$target .= 'logintype=login&pid=' . $this->extensionConfiguration['storagePid'];
-		$queryStringSeparator = !strpos($target, '?') ? '?' : '&';
-		$shibbolethLoginUri = $this->extensionConfiguration['loginHandler'] . $queryStringSeparator . 'target=' . rawurlencode($target);
+
+		$loginHandlerUrl = $this->extensionConfiguration['loginHandler'];
+		$queryStringSeparator = !strpos($loginHandlerUrl, '?') ? '?' : '&';
+
+		$shibbolethLoginUri = $loginHandlerUrl . $queryStringSeparator . 'target=' . rawurlencode($target);
 		$shibbolethLoginUri = GeneralUtility::sanitizeLocalUrl($shibbolethLoginUri);
 		$this->view->assign('shibbolethLoginUri', $shibbolethLoginUri);
 	}
