@@ -200,7 +200,7 @@ class ShibbolethAuthenticationService extends \TYPO3\CMS\Sv\AbstractAuthenticati
 	protected function updateFEUser() {
 		$this->writelog(255, 3, 3, 2, "Updating user %s!", array($this->remoteUser));
 
-		$where = "username = '" . $this->remoteUser . "' AND pid = " . $this->extConf['storagePid'];
+		$where = "username = '" . $this->getDatabaseConnection()->quoteStr($this->remoteUser, $this->authInfo['db_user']['table']) . "' AND pid = '" . intval($this->extConf['storagePid']) . "'";
 		$user = array('tstamp' => time(),
 			'username' => $this->remoteUser,
 			'password' => GeneralUtility::shortMD5(uniqid(rand(), TRUE)),
@@ -231,7 +231,7 @@ class ShibbolethAuthenticationService extends \TYPO3\CMS\Sv\AbstractAuthenticati
 			foreach ($affiliation as $title) {
 				$dbres = $this->getDatabaseConnection()->exec_SELECTquery('uid, title',
 					$this->authInfo['db_groups']['table'],
-					"deleted = 0 AND pid = " . $this->extConf['storagePid'] . " AND title = '$title'");
+					"deleted = 0 AND pid = '" . intval($this->extConf['storagePid']) . "' AND title = '" . $this->getDatabaseConnection()->quoteStr($title, $this->authInfo['db_groups']['table'])."'");
 				if ($row = $this->getDatabaseConnection()->sql_fetch_assoc($dbres)) {
 					$feGroups[] = $row['uid'];
 				} else {
