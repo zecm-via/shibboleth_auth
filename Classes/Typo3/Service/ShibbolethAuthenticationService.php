@@ -257,7 +257,12 @@ class ShibbolethAuthenticationService extends \TYPO3\CMS\Sv\AbstractAuthenticati
 	 * @return boolean
 	 */
 	protected function isShibbolethLogin() {
-		return isset($_SERVER['AUTH_TYPE']) && (strtolower($_SERVER['AUTH_TYPE']) == 'shibboleth') && !empty($this->remoteUser);
+		$isShibbolethLogin = isset($_SERVER['AUTH_TYPE']) && (strtolower($_SERVER['AUTH_TYPE']) == 'shibboleth');
+		if (!$isShibbolethLogin) {
+			$isShibbolethLogin = isset($_SERVER['REDIRECT_Shib_Session_ID']);
+		}
+
+		return $isShibbolethLogin && !empty($this->remoteUser);
 	}
 
 	/**
