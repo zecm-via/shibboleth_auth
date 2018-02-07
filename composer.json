@@ -1,7 +1,7 @@
 {
-  "name": "phluzern/shibboleth-auth",
+  "name": "visol/shibboleth-auth",
   "type": "typo3-cms-extension",
   "description": "Shibboleth Authentication for TYPO3 CMS",
-  "homepage": "https://github.com/phluzern/shibboleth_auth",
-  "license": ["GPL-2.0+"]
+  "homepage": "https://github.com/visol/shibboleth_auth",
+  "license": ["GPL-2.0-or-later"]
 }
