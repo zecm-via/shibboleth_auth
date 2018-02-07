@@ -1,6 +1,6 @@
 <?php
 
-namespace PHLU\ShibbolethAuth\Controller;
+namespace Visol\ShibbolethAuth\Controller;
 
 /**
  * This file is part of the TYPO3 CMS project.

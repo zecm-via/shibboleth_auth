@@ -5,7 +5,7 @@ $EM_CONF[$_EXTKEY] = [
     'description' => 'Shibboleth Single Sign On Authentication (BE & FE). The FE users will be imported automatically into the configured storage pid.',
     'category' => 'services',
     'shy' => 0,
-    'version' => '3.0.1',
+    'version' => '4.0.0',
     'dependencies' => '',
     'conflicts' => '',
     'priority' => '',
@@ -24,7 +24,7 @@ $EM_CONF[$_EXTKEY] = [
     'CGLcompliance_note' => '',
     'constraints' => [
         'depends' => [
-            'typo3' => '6.0.0-6.2.99',
+            'typo3' => '8.7.0-8.99.99',
         ],
         'conflicts' => [],
         'suggests' => [],

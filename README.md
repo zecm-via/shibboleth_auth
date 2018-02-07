@@ -2,9 +2,11 @@ Shibboleth Authentication for TYPO3 CMS
 =======================================
 EXT:shibboleth_auth
 
-Fork of the TYPO3 extension shibboleth_auth to fix TYPO3 CMS 6.0+ compatibility issues and shipping with an Extbase-based Login plugin.
+Fork of the TYPO3 extension shibboleth_auth to fix performance issues and shipping with an Extbase-based Login plugin.
 
 This extension enables the single sign-on based on Shibboleth for frontend and backend authentication. 
+
+Works with TYPO3 8.7 LTS and higher.
 
 Prerequisites
 -------------
@@ -32,9 +34,9 @@ For frontend login you need a TYPO3 folder to store the users. To activate the f
 
     plugin.tx_shibbolethauth {
 	    view {
-		    templateRootPath = EXT:shibboleth_auth/Resources/Private/Templates/
-		    partialRootPath = EXT:shibboleth_auth/Resources/Private/Partials/
-		    layoutRootPath = EXT:shibboleth_auth/Resources/Private/Layouts/
+		    templateRootPaths.10 = EXT:shibboleth_auth/Resources/Private/Templates/
+		    partialRootPaths.10 = EXT:shibboleth_auth/Resources/Private/Partials/
+		    layoutRootPaths.10 = EXT:shibboleth_auth/Resources/Private/Layouts/
 	    }
     }
 

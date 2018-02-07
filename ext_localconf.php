@@ -13,7 +13,7 @@ if ($_EXTCONF['enableBE']) {
 
     if (TYPO3_MODE == 'BE') {
         // Register backend logout handler
-        $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_userauth.php']['logoff_post_processing'][] = 'PHLU\\ShibbolethAuth\\Hook\\UserAuthentication->backendLogoutHandler';
+        $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_userauth.php']['logoff_post_processing'][] = \Visol\ShibbolethAuth\Hook\UserAuthentication::class . '->backendLogoutHandler';
     }
 }
 
@@ -24,7 +24,7 @@ if ($_EXTCONF['enableFE']) {
 
     // Register FE plugin
     \TYPO3\CMS\Extbase\Utility\ExtensionUtility::configurePlugin(
-        'PHLU.' . $_EXTKEY,
+        'Visol.' . $_EXTKEY,
         'Login',
         [
             'FrontendLogin' => 'index,login,loginSuccess,logout,logoutSuccess',
@@ -43,7 +43,7 @@ if ($_EXTCONF['enableFE']) {
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addService(
     $_EXTKEY,
     'auth',
-    'PHLU\\ShibbolethAuth\\Typo3\\Service\\ShibbolethAuthenticationService',
+    \Visol\ShibbolethAuth\Typo3\Service\ShibbolethAuthenticationService::class,
     [
         'title' => 'Shibboleth-Authentication',
         'description' => 'Shibboleth Authentication service (BE & FE)',
@@ -57,7 +57,7 @@ if ($_EXTCONF['enableFE']) {
         'os' => '',
         'exec' => '',
 
-        'className' => 'PHLU\\ShibbolethAuth\\Typo3\\Service\\ShibbolethAuthenticationService',
+        'className' => \Visol\ShibbolethAuth\Typo3\Service\ShibbolethAuthenticationService::class,
     ]
 );
 
