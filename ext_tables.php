@@ -3,13 +3,6 @@ defined('TYPO3_MODE') or die();
 
 $_EXTCONF = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][$_EXTKEY]);
 
-if ($_EXTCONF['enableBE']) {
-    // Backend login template
-    if (!empty($_EXTCONF['typo3LoginTemplate'])) {
-        $TBE_STYLES['htmlTemplates']['EXT:backend/Resources/Private/Templates/login.html'] = $_EXTCONF['typo3LoginTemplate'];
-    }
-}
-
 if ($_EXTCONF['enableFE']) {
     // Frontend plugin
     \TYPO3\CMS\Extbase\Utility\ExtensionUtility::registerPlugin(
@@ -24,7 +17,6 @@ if ($_EXTCONF['enableFE']) {
         $pluginSignature,
         'FILE:EXT:' . $_EXTKEY . '/Configuration/FlexForm/flexform_login.xml'
     );
-
 
     // TypoScript Configuration
     \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addStaticFile($_EXTKEY, 'Configuration/TypoScript', 'Shibboleth Authentication');

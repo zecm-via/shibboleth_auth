@@ -77,7 +77,6 @@ class FrontendLoginController extends \TYPO3\CMS\Extbase\Mvc\Controller\ActionCo
     public function showLoginAction()
     {
         $target = GeneralUtility::getIndpEnv('TYPO3_REQUEST_URL');
-        $target = GeneralUtility::removeXSS($target);
 
         if ($this->extensionConfiguration['forceSSL'] && !GeneralUtility::getIndpEnv('TYPO3_SSL')) {
             $target = str_ireplace('http:', 'https:', $target);
