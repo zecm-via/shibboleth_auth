@@ -6,7 +6,7 @@ Fork of the TYPO3 extension shibboleth_auth to fix performance issues and shippi
 
 This extension enables the single sign-on based on Shibboleth for frontend and backend authentication. 
 
-Works with TYPO3 8.7 LTS and higher.
+Works with TYPO3 8.7 LTS and higher. Could work with TYPO3 7.6 LTS, but was never tested.
 
 Prerequisites
 -------------
@@ -14,8 +14,8 @@ Apache's Shibboleth module has to be installed on the web server before you can 
 
 The following .htaccess rules must be added to the .htaccess file in document root:
 
-    AuthType Shibboleth
-    Require Shibboleth
+    AuthType shibboleth
+    Require shibboleth
 
 And if you use the RealUrl extension, the following must be added to .htaccess file, too:
 
@@ -47,15 +47,15 @@ Just like other logins in TYPO3 the plugin itself provides the login, not the pr
 In the plugin, you can also configure the redirect URL. If a parameter `redirect_url` is passed in the URL to the login page, this URL is used for a redirect on successful authentication.
 
 Using the Backend login
------------------------
-*TODO: Rework*
-
-For security reasons backend users are not imported automatically. So before you start to activate the backend login, go to the root folder of your TYPO3 installation, create a user with the username of an existing Shibboleth account and give it admin rights. Go back to the extension manager, open the settings of the Shibboleth extension and activate the backend login and the option “Only Shibboleth Backend”. Do not close the window! Open another browser (for example Firefox and Chrome as shown in the screen shot) and try to login with the former created Shibboleth user.
-
-After successful login you can close the other browser. Having Shibboleth's backend login enabled as described above you will never be able to login with a normal TYPO3 account again. Insecure extensions which allow SQL injection could not be misused to read the password hash of one of your admin users, because these passwords will never work again. Therefore Shibboleth authentication brings an increase of backend security against hacker attacks.
-
-The extension should be able to handle session timeouts. Therefore the configuration variable showRefreshLoginPopup is set to open the login form in a new window. Keep in mind that TYPO3's refresh login does not work in debug mode. As the life time of your login depends on the Shibboleth sever variable it is recommended to set TYPO3's session timeout to a higher value if problems with the refresh login occur.
-
-How authentication works
 ------------------------
-Shibboleth is a single sign-on technology, that allows you to access the protected content of one or more service providers by logging in at an identity provider. This is implemented via redirects and server variables provided by the web server's Shibboleth module. When the user tries to access protected content, TYPO3 looks if there is an existing fe-user or special evironment variables with the user's data. If not, it redirects to a directory (= ShibHandler) protected by the Apache's Shibboleth module. This will send the browser to the assigned identity provider with the login page. After logging in the browser gets redirected to the TYPO3 page again, where the php script can now read the server variables with the user's data. The authentication and the environment variables are not provided by this extension! TYPO3's Shibboleth authentication needs an installed shibboleth module on your web server!
+If the usage of Shibboleth for the backend login is enabled in the extension configuration, you will be presented with an additional login provider in the TYPO3 backend login form.
+
+The `remoteUser` setting determines which backend user is looked up during the authentication process. By default, this is set to `REMOTE_USER`. This means that a user with a username identical to the value of the `REMOTE_USER` variable must exist.
+
+You can customize the login screen by copying `Resources/Private/Templates/BackendLogin/ShibbolethLogin.html` to another location and adjusting its contents. You can then set the configuration `typo3LoginTemplate` to this path using the `EXT:` or `FILE:` prefix.
+
+Support
+-------
+If you need support setting up your TYPO3 instance with Shibboleth, you can contact us:
+
+visol digitale Dienstleistungen GmbH, www.visol.ch
