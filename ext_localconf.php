@@ -69,3 +69,6 @@ if ($_EXTCONF['enableFE']) {
 );
 
 unset($_EXTCONF);
+
+// Use popup window to refresh login instead of the AJAX relogin:
+$GLOBALS['TYPO3_CONF_VARS']['BE']['showRefreshLoginPopup'] = 1;
