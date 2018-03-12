@@ -2,6 +2,8 @@
 
 namespace Visol\ShibbolethAuth\Hook;
 
+use TYPO3\CMS\Core\Utility\StringUtility;
+
 /**
  * This file is part of the TYPO3 CMS project.
  *
@@ -20,7 +22,12 @@ class UserAuthentication
 
     public function backendLogoutHandler()
     {
-        $_EXTCONF = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['shibboleth_auth']);
-        $_GET['redirect'] = $_EXTCONF['logoutHandler'];
+        // Delete the Shibboleth session cookie
+        foreach ($_COOKIE as $name => $value) {
+            if (StringUtility::beginsWith($name, '_shibsession_')) {
+                setcookie($name, null, -1, '/');
+                break;
+            }
+        }
     }
 }
