@@ -48,14 +48,17 @@ class FrontendLoginController extends \TYPO3\CMS\Extbase\Mvc\Controller\ActionCo
     {
         // Login type
         $loginType = GeneralUtility::_GP('logintype');
+
+        // URL to redirect to
         $redirectUrl = GeneralUtility::_GP('redirect_url');
+
         // Is user logged in?
         $userIsLoggedIn = $GLOBALS['TSFE']->loginUser;
 
         // What to display
         if ($userIsLoggedIn) {
             $this->remoteUser = $GLOBALS['TSFE']->fe_user->user['username'];
-            if (!empty($redirectUrl)) {
+            if (!empty($redirectUrl) || $this->getConfiguredRedirectPage()) {
                 $this->forward('loginSuccess');
             } else {
                 $this->forward('showLogout');
@@ -104,10 +107,17 @@ class FrontendLoginController extends \TYPO3\CMS\Extbase\Mvc\Controller\ActionCo
      */
     public function loginSuccessAction()
     {
-        // TODO respect FlexForm setting
-        $redirectUrl = GeneralUtility::getIndpEnv('TYPO3_REQUEST_HOST') . GeneralUtility::_GP('redirect_url');
-        $redirectUrl = GeneralUtility::sanitizeLocalUrl($redirectUrl);
-        HttpUtility::redirect($redirectUrl);
+        $redirectUrl = GeneralUtility::_GP('redirect_url');
+        $targetUrl = GeneralUtility::getIndpEnv('TYPO3_REQUEST_HOST') . $redirectUrl;
+        $targetUrl = GeneralUtility::sanitizeLocalUrl($targetUrl);
+
+        $configuredRedirectPage = $this->getConfiguredRedirectPage();
+
+        if (empty($redirectUrl) && !empty($configuredRedirectPage)) {
+            $absoluteUriScheme = (bool)$this->extensionConfiguration['forceSSL'] ? 'https' : 'http';
+            $targetUrl = $this->uriBuilder->setTargetPageUid((int)$configuredRedirectPage)->setAbsoluteUriScheme($absoluteUriScheme)->setCreateAbsoluteUri(true)->build();
+        }
+        HttpUtility::redirect($targetUrl);
     }
 
     /**
@@ -122,5 +132,14 @@ class FrontendLoginController extends \TYPO3\CMS\Extbase\Mvc\Controller\ActionCo
         $redirectUrl = $this->extensionConfiguration['logoutHandler'];
         $redirectUrl = GeneralUtility::sanitizeLocalUrl($redirectUrl);
         HttpUtility::redirect($redirectUrl);
+    }
+
+    protected function getConfiguredRedirectPage()
+    {
+        $configuredRedirectPage = null;
+        if (array_key_exists('redirectPage', $this->settings) && !empty($this->settings['redirectPage'])) {
+            $configuredRedirectPage = $this->settings['redirectPage'];
+        }
+        return $configuredRedirectPage;
     }
 }

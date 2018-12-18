@@ -44,13 +44,13 @@ If no frontend user is logged in, a login link is displayed. *This is a differen
 
 Just like other logins in TYPO3 the plugin itself provides the login, not the protection. If you want the access to the content of your login page restricted, you have to assign the related group in the access settings. Do not assign any restrictions to the Shibboleth plugin itself! Otherwise no login redirects will be made.
 
-In the plugin, you can also configure the redirect URL. If a parameter `redirect_url` is passed in the URL to the login page, this URL is used for a redirect on successful authentication.
+In the plugin, you can also configure the redirect page after successful authentication. If a parameter `redirect_url` is passed in the URL to the login page, this parameter takes precedence over the FlexForm setting and this URL is used for a redirect on successful authentication.
 
 Using the Backend login
 ------------------------
 If the usage of Shibboleth for the backend login is enabled in the extension configuration, you will be presented with an additional login provider in the TYPO3 backend login form.
 
-The `remoteUser` setting determines which backend user is looked up during the authentication process. By default, this is set to `REMOTE_USER`. This means that a user with a username identical to the value of the `REMOTE_USER` variable must exist.
+The `remoteUser` setting determines which backend user is looked up during the authentication process. By default, this is set to `REMOTE_USER`. This means that a user with a username identical to the value of the `REMOTE_USER` server variable must exist.
 
 You can customize the login screen by copying `Resources/Private/Templates/BackendLogin/ShibbolethLogin.html` to another location and adjusting its contents. You can then set the configuration `typo3LoginTemplate` to this path using the `EXT:` or `FILE:` prefix.
 
