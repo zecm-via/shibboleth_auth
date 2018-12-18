@@ -12,7 +12,8 @@ if ($_EXTCONF['enableFE']) {
     );
 
     $pluginSignature = str_replace('_', '', $_EXTKEY) . '_login';
-    $TCA['tt_content']['types']['list']['subtypes_addlist'][$pluginSignature] = 'pi_flexform';
+    $GLOBALS['TCA']['tt_content']['types']['list']['subtypes_addlist'][$pluginSignature] = 'pi_flexform';
+    $GLOBALS['TCA']['tt_content']['types']['list']['subtypes_excludelist'][$pluginSignature] = 'select_key,pages, recursive';
     \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addPiFlexFormValue(
         $pluginSignature,
         'FILE:EXT:' . $_EXTKEY . '/Configuration/FlexForm/flexform_login.xml'
