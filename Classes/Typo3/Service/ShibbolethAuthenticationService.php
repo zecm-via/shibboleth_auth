@@ -15,82 +15,66 @@ namespace Visol\ShibbolethAuth\Typo3\Service;
  * The TYPO3 project - inspiring people to share!
  */
 
+use TYPO3\CMS\Backend\Exception;
+use TYPO3\CMS\Core\Authentication\AbstractAuthenticationService;
+use TYPO3\CMS\Core\Authentication\AbstractUserAuthentication;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
+use TYPO3\CMS\Core\Crypto\PasswordHashing\PasswordHashFactory;
+use TYPO3\CMS\Core\Crypto\Random;
+use TYPO3\CMS\Core\Database\Connection;
+use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
-class ShibbolethAuthenticationService extends \TYPO3\CMS\Sv\AbstractAuthenticationService
+class ShibbolethAuthenticationService extends AbstractAuthenticationService
 {
 
-    public $prefixId = 'shibboleth_auth';
+    protected string $extKey = 'shibboleth_auth';
 
-    /**
-     * The extension key
-     *
-     * @var string
-     */
-    public $extKey = 'shibboleth_auth';
+    protected array $extensionConfiguration = [];
 
-    /**
-     * @var \TYPO3\CMS\Core\Authentication\AbstractUserAuthentication
-     */
-    public $pObj;
+    protected ?string $remoteUser = '';
 
-    /**
-     * @var array
-     */
-    protected $extConf;
-
-    /**
-     * @var string
-     */
-    protected $remoteUser;
-
-    /**
-     * Inits some variables
-     *
-     * @return    void
-     */
-    public function init()
+    public function init(): bool
     {
-        $this->extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][$this->extKey]);
-        if (empty($this->extConf['remoteUser'])) {
-            $this->extConf['remoteUser'] = 'REMOTE_USER';
+        $this->extensionConfiguration = GeneralUtility::makeInstance(ExtensionConfiguration::class)->get(
+            'shibboleth_auth'
+        );
+        if (empty($this->extensionConfiguration['remoteUser'])) {
+            $this->extensionConfiguration['remoteUser'] = 'REMOTE_USER';
         }
-        if (empty($this->extConf['displayName'])) {
-            $this->extConf['displayName'] = 'REMOTE_USER';
+        if (empty($this->extensionConfiguration['displayName'])) {
+            $this->extensionConfiguration['displayName'] = 'REMOTE_USER';
         }
-        $this->remoteUser = $_SERVER[$this->extConf['remoteUser']];
+        $this->remoteUser = $_SERVER[$this->extensionConfiguration['remoteUser']];
         return parent::init();
     }
 
     /**
      * Initialize authentication service
      *
-     * @param    string $mode Subtype of the service which is used to call the service.
-     * @param    array $loginData Submitted login form data
-     * @param    array $authInfo Information array. Holds submitted form data etc.
-     * @param    object $pObj Parent object
-     *
-     * @return    mixed
+     * @param string $mode Subtype of the service which is used to call the service.
+     * @param array $loginData Submitted login form data
+     * @param array $authInfo Information array. Holds submitted form data etc.
+     * @param AbstractUserAuthentication $pObj Parent object
      */
-    public function initAuth($mode, $loginData, $authInfo, $pObj)
+    public function initAuth($mode, $loginData, $authInfo, $pObj): void
     {
-
-        if (defined('TYPO3_cliMode')) {
-            return parent::initAuth($mode, $loginData, $authInfo, $pObj);
+        if (TYPO3_REQUESTTYPE & TYPO3_REQUESTTYPE_CLI) {
+            parent::initAuth($mode, $loginData, $authInfo, $pObj);
         }
 
         // bypass Shibboleth login if enableFE is 0
-        if (!($this->extConf['enableFE']) && TYPO3_MODE == 'FE') {
-            return parent::initAuth($mode, $loginData, $authInfo, $pObj);
+        if (!($this->extensionConfiguration['enableFE']) && TYPO3_MODE == 'FE') {
+            parent::initAuth($mode, $loginData, $authInfo, $pObj);
         }
 
         $this->login = $loginData;
         if (empty($this->login['uname']) && empty($this->remoteUser)) {
-            return parent::initAuth($mode, $loginData, $authInfo, $pObj);
+            parent::initAuth($mode, $loginData, $authInfo, $pObj);
         } else {
             $loginData['status'] = 'login';
-
-            return parent::initAuth($mode, $loginData, $authInfo, $pObj);
+            parent::initAuth($mode, $loginData, $authInfo, $pObj);
         }
     }
 
@@ -98,14 +82,11 @@ class ShibbolethAuthenticationService extends \TYPO3\CMS\Sv\AbstractAuthenticati
     {
         $user = false;
         if ($this->login['status'] == 'login' && $this->isShibbolethLogin() && empty($this->login['uname'])) {
-            $storagePid = GeneralUtility::_GP('pid');
-            if (empty($storagePid)) {
-                GeneralUtility::_GETset($this->extConf['storagePid'], 'pid');
-            }
             $user = $this->fetchUserRecord($this->remoteUser);
             if (!is_array($user) || empty($user)) {
-                if ($this->authInfo['loginType'] == 'FE' && !empty($this->remoteUser) && $this->extConf['enableAutoImport']) {
-                    $this->importFEUser();
+                if ($this->isLoginTypeFrontend(
+                    ) && !empty($this->remoteUser) && $this->extensionConfiguration['enableAutoImport']) {
+                    $this->importFrontendUser();
                 } else {
                     $user = false;
                     // Failed login attempt (no username found)
@@ -114,53 +95,34 @@ class ShibbolethAuthenticationService extends \TYPO3\CMS\Sv\AbstractAuthenticati
                         3,
                         3,
                         2,
-                        "Login-attempt from %s (%s), username '%s' not found!!",
+                        "Login attempt from %s (%s), username '%s' not found!",
                         [$this->authInfo['REMOTE_ADDR'], $this->authInfo['REMOTE_HOST'], $this->remoteUser]
-                    );
-                    GeneralUtility::sysLog(
-                        sprintf(
-                            "Login-attempt from %s (%s), username '%s' not found!",
-                            $this->authInfo['REMOTE_ADDR'],
-                            $this->authInfo['REMOTE_HOST'],
-                            $this->remoteUser
-                        ),
-                        $this->extKey,
-                        0
                     );
                 }
             } else {
-                if ($this->authInfo['loginType'] == 'FE' && $this->extConf['enableAutoImport']) {
-                    $this->updateFEUser();
-                }
-                if ($this->writeDevLog) {
-                    GeneralUtility::devLog(
-                        'User found: ' . GeneralUtility::arrayToLogString($user, [$this->db_user['userid_column'], $this->db_user['username_column']]),
-                        $this->extKey
-                    );
+                if ($this->isLoginTypeFrontend() && $this->extensionConfiguration['enableAutoImport']) {
+                    $this->updateFrontendUser();
                 }
             }
-            if ($this->authInfo['loginType'] == 'FE') {
-                // the fe_user was updated, it should be fetched again.
+            if ($this->isLoginTypeFrontend()) {
+                // The frontend user was updated, it should be fetched again
                 $user = $this->fetchUserRecord($this->remoteUser);
             }
         }
 
-        /* Deny Backend login for Non-Shibboleth authentication when onlyShibbolethFunc is set */
-        if (!defined('TYPO3_cliMode') && $this->authInfo['loginType'] == 'BE' && $this->extConf['onlyShibbolethBE'] && empty($user)) {
-
+        // Deny Backend login for non-Shibboleth authentication if onlyShibbolethFunc is set
+        if (!(TYPO3_REQUESTTYPE & TYPO3_REQUESTTYPE_CLI) && $this->authInfo['loginType'] === 'BE' && $this->extensionConfiguration['onlyShibbolethBE'] && empty($user)) {
+            // Implement your own error page
             if (is_array($GLOBALS['TYPO3_CONF_VARS']['EXTCONF'][$this->extKey]['onlyShibbolethFunc'])) {
                 foreach ($GLOBALS['TYPO3_CONF_VARS']['EXTCONF'][$this->extKey]['onlyShibbolethFunc'] as $_classRef) {
-                    $_procObj =& GeneralUtility::getUserObj($_classRef);
+                    $_procObj = GeneralUtility::makeInstance($_classRef);
                     $_procObj->onlyShibbolethFunc($this->remoteUser);
                 }
             } else {
-                /** @var $messageObj \TYPO3\CMS\Core\Messaging\ErrorpageMessage */
-                $messageObj = GeneralUtility::makeInstance(
-                    'TYPO3\CMS\Core\Messaging\ErrorpageMessage',
-                    '<p>User (' . $this->remoteUser . ') not found!</p><p><a href="' . $this->extConf['logoutHandler'] . '">Shibboleth Logout</a></p>',
-                    'Login error'
+                throw new Exception(
+                    'Login without Shibboleth is not permitted.',
+                    1616498840
                 );
-                $messageObj->output();
             }
             foreach ($_COOKIE as $key => $val) {
                 unset($_COOKIE[$key]);
@@ -178,26 +140,20 @@ class ShibbolethAuthenticationService extends \TYPO3\CMS\Sv\AbstractAuthenticati
      *  - 0 - authentication failure
      *  - 100 - just go on. User is not authenticated but there is still no reason to stop
      *  - 200 - the service was able to authenticate the user
-     *
-     * @param    array        Array containing FE user data of the logged user.
-     *
-     * @return    integer        authentication statuscode, one of 0,100 and 200
      */
-    public function authUser($user)
+    public function authUser(array $user): int
     {
         $OK = 100;
 
-        if (defined('TYPO3_cliMode')) {
+        if (TYPO3_REQUESTTYPE & TYPO3_REQUESTTYPE_CLI) {
             $OK = 100;
         } else {
-            if (($this->authInfo['loginType'] == 'FE') && !empty($this->login['uname'])) {
+            if (($this->isLoginTypeFrontend()) && !empty($this->login['uname'])) {
                 $OK = 100;
             } else {
-                if ($this->isShibbolethLogin() && !empty($user)
-                    && ($this->remoteUser == $user[$this->authInfo['db_user']['username_column']])
-                ) {
+                if ($this->isShibbolethLogin() && !empty($user) && ($this->remoteUser === $user[$this->authInfo['db_user']['username_column']])) {
                     $OK = 200;
-                    if ($user['lockToDomain'] && $user['lockToDomain'] != $this->authInfo['HTTP_HOST']) {
+                    if ($user['lockToDomain'] && $user['lockToDomain'] !== $this->authInfo['HTTP_HOST']) {
                         // Lock domain didn't match, so error:
                         if ($this->writeAttemptLog) {
                             $this->writelog(
@@ -205,7 +161,7 @@ class ShibbolethAuthenticationService extends \TYPO3\CMS\Sv\AbstractAuthenticati
                                 3,
                                 3,
                                 1,
-                                "Login-attempt from %s (%s), username '%s', locked domain '%s' did not match '%s'!",
+                                "Login attempt from %s (%s), username '%s', locked domain '%s' did not match '%s'!",
                                 [
                                     $this->authInfo['REMOTE_ADDR'],
                                     $this->authInfo['REMOTE_HOST'],
@@ -213,18 +169,6 @@ class ShibbolethAuthenticationService extends \TYPO3\CMS\Sv\AbstractAuthenticati
                                     $user['lockToDomain'],
                                     $this->authInfo['HTTP_HOST']
                                 ]
-                            );
-                            GeneralUtility::sysLog(
-                                sprintf(
-                                    "Login-attempt from %s (%s), username '%s', locked domain '%s' did not match '%s'!",
-                                    $this->authInfo['REMOTE_ADDR'],
-                                    $this->authInfo['REMOTE_HOST'],
-                                    $user[$this->authInfo['db_user']['username_column']],
-                                    $user['lockToDomain'],
-                                    $this->authInfo['HTTP_HOST']
-                                ),
-                                $this->extKey,
-                                0
                             );
                         }
                         $OK = 0;
@@ -239,44 +183,45 @@ class ShibbolethAuthenticationService extends \TYPO3\CMS\Sv\AbstractAuthenticati
     /**
      * Creates a new FE user from the current Shibboleth data
      */
-    protected function importFEUser()
+    protected function importFrontendUser(): void
     {
-        $this->writelog(255, 3, 3, 2, "Importing user %s!", [$this->remoteUser]);
-
-        $user = [
-            'crdate' => time(),
-            'tstamp' => time(),
-            'pid' => $this->extConf['storagePid'],
-            'username' => $this->remoteUser,
-            'password' => md5(GeneralUtility::shortMD5(uniqid(rand(), true))),
-            'email' => $this->getServerVar($this->extConf['mail']),
-            'name' => $this->getServerVar($this->extConf['displayName']),
-            'usergroup' => $this->getFEUserGroups(),
-        ];
-        $this->getDatabaseConnection()->exec_INSERTquery($this->authInfo['db_user']['table'], $user);
+        $this->writelog(255, 3, 3, 2, 'Importing user %s.', [$this->remoteUser]);
+        $this->getDatabaseConnectionForFrontendUsers()->insert(
+            $this->authInfo['db_user']['table'],
+            [
+                'crdate' => time(),
+                'tstamp' => time(),
+                'pid' => $this->extensionConfiguration['storagePid'],
+                'username' => $this->remoteUser,
+                'password' => $this->getRandomPassword(),
+                'email' => $this->getServerVar($this->extensionConfiguration['mail']),
+                'name' => $this->getServerVar($this->extensionConfiguration['displayName']),
+                'usergroup' => $this->getFEUserGroups(),
+            ]
+        );
     }
 
     /**
-     * Updates an existing FE user with the current data provided by Shibboleth, matched be the uniqueId
-     *
-     * @return boolean
+     * Updates an existing FE user with the current data provided by Shibboleth
      */
-    protected function updateFEUser()
+    protected function updateFrontendUser(): void
     {
-        $this->writelog(255, 3, 3, 2, "Updating user %s!", [$this->remoteUser]);
-
-        $where = "username = '" . $this->getDatabaseConnection()->quoteStr($this->remoteUser, $this->authInfo['db_user']['table']) . "' AND pid = '" . intval(
-                $this->extConf['storagePid']
-            ) . "'";
-        $user = [
-            'tstamp' => time(),
-            'username' => $this->remoteUser,
-            'password' => GeneralUtility::shortMD5(uniqid(rand(), true)),
-            'email' => $this->getServerVar($this->extConf['mail']),
-            'name' => $this->getServerVar($this->extConf['displayName']),
-            'usergroup' => $this->getFEUserGroups(),
-        ];
-        $this->getDatabaseConnection()->exec_UPDATEquery($this->authInfo['db_user']['table'], $where, $user);
+        $this->writelog(255, 3, 3, 2, 'Updating user %s.', [$this->remoteUser]);
+        $this->getDatabaseConnectionForFrontendUsers()->update(
+            $this->authInfo['db_user']['table'], // table
+            [
+                'tstamp' => time(),
+                'username' => $this->remoteUser,
+                'password' => $this->getRandomPassword(),
+                'email' => $this->getServerVar($this->extensionConfiguration['mail']),
+                'name' => $this->getServerVar($this->extensionConfiguration['displayName']),
+                'usergroup' => $this->getFEUserGroups(),
+            ],
+            [
+                'username' => $this->remoteUser,
+                'pid' => $this->extensionConfiguration['storagePid'],
+            ]
+        );
     }
 
     /**
@@ -288,57 +233,38 @@ class ShibbolethAuthenticationService extends \TYPO3\CMS\Sv\AbstractAuthenticati
      */
     protected function getFEUserGroups()
     {
-        $feGroups = [];
-        $eduPersonAffiliation = $this->getServerVar($this->extConf['eduPersonAffiliation']);
+        $frontendUserGroupUids = [];
+        $eduPersonAffiliation = $this->getServerVar($this->extensionConfiguration['eduPersonAffiliation']);
 
         if (empty($eduPersonAffiliation)) {
             $eduPersonAffiliation = 'member';
         }
         if (!empty($eduPersonAffiliation)) {
             $affiliation = explode(';', $eduPersonAffiliation);
-            array_walk($affiliation, create_function('&$v,$k', '$v = preg_replace("/@.*/", "", $v);'));
+            array_walk($affiliation, function(&$v){$v = preg_replace('/@.*/', '', $v);});
 
             // insert the affiliations in fe_groups if they are not there.
             foreach ($affiliation as $title) {
-                $dbres = $this->getDatabaseConnection()->exec_SELECTquery(
-                    'uid, title',
-                    $this->authInfo['db_groups']['table'],
-                    "deleted = 0 AND pid = '" . intval($this->extConf['storagePid']) . "' AND title = '" . $this->getDatabaseConnection()->quoteStr(
-                        $title,
-                        $this->authInfo['db_groups']['table']
-                    ) . "'"
-                );
-                if ($row = $this->getDatabaseConnection()->sql_fetch_assoc($dbres)) {
-                    $feGroups[] = $row['uid'];
-                } else {
-                    $group = ['title' => $title, 'pid' => $this->extConf['storagePid']];
-                    $this->getDatabaseConnection()->exec_INSERTquery($this->authInfo['db_groups']['table'], $group);
-                    $feGroups[] = $this->getDatabaseConnection()->sql_insert_id();
-                }
-                if ($dbres) {
-                    $this->getDatabaseConnection()->sql_free_result($dbres);
-                }
+                $frontendUserGroupUids[] = $this->getOrCreateFrontendUserGroupByTitleAndReturnUid($title);
             }
         }
 
         // Hook for any additional fe_groups
         if (is_array($GLOBALS['TYPO3_CONF_VARS']['EXTCONF'][$this->extKey]['getFEUserGroups'])) {
             foreach ($GLOBALS['TYPO3_CONF_VARS']['EXTCONF'][$this->extKey]['getFEUserGroups'] as $_classRef) {
-                $_procObj =& GeneralUtility::getUserObj($_classRef);
-                $feGroups = $_procObj->getFEUserGroups($feGroups);
+                $_procObj = GeneralUtility::makeInstance($_classRef);
+                $frontendUserGroupUids = $_procObj->getFEUserGroups($frontendUserGroupUids);
             }
         }
-        return implode(',', $feGroups);
+        return implode(',', $frontendUserGroupUids);
     }
 
-    /**
-     * @return boolean
-     */
-    protected function isShibbolethLogin()
+    protected function isShibbolethLogin(): bool
     {
-        $isShibbolethLogin = isset($_SERVER['AUTH_TYPE']) && (strtolower($_SERVER['AUTH_TYPE']) == 'shibboleth');
+        $isShibbolethLogin = isset($_SERVER['AUTH_TYPE']) && (strtolower($_SERVER['AUTH_TYPE']) === 'shibboleth');
         if (!$isShibbolethLogin) {
-            $isShibbolethLogin = isset($_SERVER['REDIRECT_Shib_Session_ID']);
+            // In some cases, no AUTH_TYPE is set. We then fall back to find out if Shib_Session_ID is set
+            $isShibbolethLogin = isset($_SERVER['Shib_Session_ID']) || isset($_SERVER['REDIRECT_Shib_Session_ID']);
         }
 
         return $isShibbolethLogin && !empty($this->remoteUser);
@@ -346,14 +272,11 @@ class ShibbolethAuthenticationService extends \TYPO3\CMS\Sv\AbstractAuthenticati
 
     /**
      * Returns the requested variable from $_SERVER
-     * Falls back to the prefixed version (e.g. $_SERVER['REDIRECT_affiliation'] instead of $_SERVER['affiliation'] if needed
      *
-     * @param $key
-     * @param string $prefix
-     *
-     * @return string|NULL
+     * Falls back to the prefixed version (e.g. $_SERVER['REDIRECT_affiliation'] instead of $_SERVER['affiliation'] if needed.
+     * This is necessary if there was an internal redirect after authentication.
      */
-    protected function getServerVar($key, $prefix = 'REDIRECT_')
+    protected function getServerVar(string $key, string $prefix = 'REDIRECT_'): ?string
     {
         if (isset($_SERVER[$key])) {
             return $_SERVER[$key];
@@ -371,11 +294,58 @@ class ShibbolethAuthenticationService extends \TYPO3\CMS\Sv\AbstractAuthenticati
         return null;
     }
 
-    /**
-     * @return \TYPO3\CMS\Core\Database\DatabaseConnection
-     */
-    protected function getDatabaseConnection()
+    protected function getRandomPassword(): string
     {
-        return $GLOBALS['TYPO3_DB'];
+        $randomPassword = GeneralUtility::makeInstance(Random::class)->generateRandomBytes(32);
+        $hashInstance = GeneralUtility::makeInstance(PasswordHashFactory::class)->getDefaultHashInstance('FE');
+        return $hashInstance->getHashedPassword($randomPassword);
     }
+
+    protected function isLoginTypeFrontend(): bool
+    {
+        return $this->authInfo['loginType'] === 'FE';
+    }
+
+    protected function getDatabaseConnectionForFrontendUsers(): Connection
+    {
+        return $this->getDatabaseConnectionPool()->getConnectionForTable($this->authInfo['db_user']['table']);
+    }
+
+    /**
+     * Looks up a frontend user groups with the same title as an affiliation
+     * If it exists, return uid, if not, create one and return uid
+     */
+    protected function getOrCreateFrontendUserGroupByTitleAndReturnUid(string $title): int
+    {
+        /** @var QueryBuilder $queryBuilder */
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(
+            $this->authInfo['db_groups']['table']
+        );
+        $recordData = $queryBuilder->select('*')->from($this->authInfo['db_groups']['table'])->where(
+                $queryBuilder->expr()->eq('title', $queryBuilder->createNamedParameter($title)),
+                $queryBuilder->expr()->eq('pid', $this->extensionConfiguration['storagePid']),
+            )->execute()->fetchAssociative();
+
+        if ($recordData) {
+            return $recordData['uid'];
+        }
+
+        $databaseConnection = $this->getDatabaseConnectionPool()->getConnectionForTable(
+            $this->authInfo['db_groups']['table']
+        );
+        $databaseConnection->insert(
+            $this->authInfo['db_groups']['table'],
+            [
+                'pid' => $this->extensionConfiguration['storagePid'],
+                'title' => $title,
+            ]
+        );
+        return (int)$databaseConnection->lastInsertId($this->authInfo['db_groups']['table']);
+    }
+
+    protected function getDatabaseConnectionPool(): ConnectionPool
+    {
+        return GeneralUtility::makeInstance(ConnectionPool::class);
+    }
+
 }
