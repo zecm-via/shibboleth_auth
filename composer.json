@@ -7,11 +7,16 @@
     "GPL-2.0-or-later"
   ],
   "require": {
-    "typo3/cms-core": "~8.7.0"
+    "typo3/cms-core": ">= 10.4.0"
   },
   "autoload": {
     "psr-4": {
       "Visol\\ShibbolethAuth\\": "Classes/"
+    }
+  },
+  "extra": {
+    "typo3/cms": {
+      "extension-key": "shibboleth_auth"
     }
   }
 }
