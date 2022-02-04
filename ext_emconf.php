@@ -9,10 +9,10 @@ $EM_CONF['shibboleth_auth'] = [
     'author_company' => 'visol digitale Dienstleistungen GmbH',
     'state' => 'excludeFromUpdates',
     'clearCacheOnLoad' => 0,
-    'version' => '5.0.0',
+    'version' => '5.0.1',
     'constraints' => [
         'depends' => [
-            'typo3' => '10.4.0-10.4.99',
+            'typo3' => '9.5.0-10.4.99',
         ],
         'conflicts' => [],
         'suggests' => [],

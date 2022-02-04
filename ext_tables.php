@@ -1,6 +1,6 @@
 <?php
 
-defined('TYPO3') || die();
+defined('TYPO3') || defined('TYPO3_MODE') || die();
 
 (function ($extKey = 'shibboleth_auth') {
     $extensionConfiguration = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(

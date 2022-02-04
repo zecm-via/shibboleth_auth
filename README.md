@@ -4,11 +4,11 @@ EXT:shibboleth_auth
 
 Fork of the TYPO3 extension shibboleth_auth to fix performance issues and shipping with an Extbase-based Login plugin.
 
-This extension enables the single sign-on based on Shibboleth for frontend and backend authentication. 
+This extension enables the single sign-on based on Shibboleth for frontend and backend authentication.
 
 Compatibility:
 
-* Version 5 works with TYPO3 10.4 LTS
+* Version 5 works with TYPO3 9.5 LTS and TYPO3 10.4 LTS
 * Version 4 works with TYPO3 8.7 LTS. It is no longer maintained.
 
 Prerequisites
@@ -38,9 +38,9 @@ Installation
 
 Install this extension via `composer require visol/shibboleth-auth` and activate the extension.
 
-After installing the extension, you have to activate the basic features in the extension's settings to be found in Admin Tools -> Settings -> Extension Configuration. 
+After installing the extension, you have to activate the basic features in the extension's settings to be found in Admin Tools -> Settings -> Extension Configuration.
 
-By default, the extension will not do anything. Shibboleth authentication can be activated for frontend and backend separately. It is highly recommended to keep a browser window with an authenticated admin user open before activating and testing the backend login (see below). 
+By default, the extension will not do anything. Shibboleth authentication can be activated for frontend and backend separately. It is highly recommended to keep a browser window with an authenticated admin user open before activating and testing the backend login (see below).
 
 Otherwise you could lock yourself out, if your Shibboleth configuration is incorrect.
 
