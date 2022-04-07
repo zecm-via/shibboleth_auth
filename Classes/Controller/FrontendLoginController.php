@@ -14,6 +14,9 @@ namespace Visol\ShibbolethAuth\Controller;
  *
  * The TYPO3 project - inspiring people to share!
  */
+
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
+use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\HttpUtility;
 
@@ -32,7 +35,8 @@ class FrontendLoginController extends \TYPO3\CMS\Extbase\Mvc\Controller\ActionCo
 
     public function initializeAction()
     {
-        $this->extensionConfiguration = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['shibboleth_auth']);
+        $this->extensionConfiguration = GeneralUtility::makeInstance(ExtensionConfiguration::class)->get('shibboleth_auth');
+
         if (empty($this->extensionConfiguration['remoteUser'])) {
             $this->extensionConfiguration['remoteUser'] = 'REMOTE_USER';
         }
@@ -46,6 +50,8 @@ class FrontendLoginController extends \TYPO3\CMS\Extbase\Mvc\Controller\ActionCo
      */
     public function indexAction()
     {
+        $context = GeneralUtility::makeInstance(Context::class);
+
         // Login type
         $loginType = GeneralUtility::_GP('logintype');
 
@@ -53,11 +59,11 @@ class FrontendLoginController extends \TYPO3\CMS\Extbase\Mvc\Controller\ActionCo
         $redirectUrl = GeneralUtility::_GP('redirect_url');
 
         // Is user logged in?
-        $userIsLoggedIn = $GLOBALS['TSFE']->loginUser;
+        $userIsLoggedIn = $context->getPropertyFromAspect('frontend.user', 'isLoggedIn');
 
         // What to display
         if ($userIsLoggedIn) {
-            $this->remoteUser = $GLOBALS['TSFE']->fe_user->user['username'];
+            $this->remoteUser = $context->getPropertyFromAspect('frontend.user', 'username');
             if (!empty($redirectUrl) || $this->getConfiguredRedirectPage()) {
                 $this->forward('loginSuccess');
             } else {

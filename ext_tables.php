@@ -1,26 +1,33 @@
 <?php
-defined('TYPO3_MODE') or die();
 
-$_EXTCONF = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][$_EXTKEY]);
+defined('TYPO3') || die();
 
-if ($_EXTCONF['enableFE']) {
-    // Frontend plugin
-    \TYPO3\CMS\Extbase\Utility\ExtensionUtility::registerPlugin(
-        $_EXTKEY,
-        'Login',
-        'LLL:EXT:shibboleth_auth/Resources/Private/Language/locallang_db.xlf:pluginLabel'
-    );
+(function ($extKey = 'shibboleth_auth') {
+    $extensionConfiguration = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(
+        \TYPO3\CMS\Core\Configuration\ExtensionConfiguration::class
+    )->get($extKey);
 
-    $pluginSignature = str_replace('_', '', $_EXTKEY) . '_login';
-    $GLOBALS['TCA']['tt_content']['types']['list']['subtypes_addlist'][$pluginSignature] = 'pi_flexform';
-    $GLOBALS['TCA']['tt_content']['types']['list']['subtypes_excludelist'][$pluginSignature] = 'select_key,pages, recursive';
-    \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addPiFlexFormValue(
-        $pluginSignature,
-        'FILE:EXT:' . $_EXTKEY . '/Configuration/FlexForm/flexform_login.xml'
-    );
+    if ($extensionConfiguration['enableFE']) {
+        // Frontend plugin
+        \TYPO3\CMS\Extbase\Utility\ExtensionUtility::registerPlugin(
+            $extKey,
+            'Login',
+            'LLL:EXT:shibboleth_auth/Resources/Private/Language/locallang_db.xlf:pluginLabel'
+        );
 
-    // TypoScript Configuration
-    \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addStaticFile($_EXTKEY, 'Configuration/TypoScript', 'Shibboleth Authentication');
-}
+        $pluginSignature = str_replace('_', '', $extKey) . '_login';
+        $GLOBALS['TCA']['tt_content']['types']['list']['subtypes_addlist'][$pluginSignature] = 'pi_flexform';
+        $GLOBALS['TCA']['tt_content']['types']['list']['subtypes_excludelist'][$pluginSignature] = 'select_key,pages, recursive';
+        \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addPiFlexFormValue(
+            $pluginSignature,
+            'FILE:EXT:' . $extKey . '/Configuration/FlexForm/flexform_login.xml'
+        );
 
-unset($_EXTCONF);
+        // TypoScript Configuration
+        \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addStaticFile(
+            $extKey,
+            'Configuration/TypoScript',
+            'Shibboleth Authentication'
+        );
+    }
+})();

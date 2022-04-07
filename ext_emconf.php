@@ -1,8 +1,8 @@
 <?php
 
-$EM_CONF[$_EXTKEY] = [
+$EM_CONF['shibboleth_auth'] = [
     'title' => 'Shibboleth Authentication',
-    'description' => 'Shibboleth Single Sign On Authentication (BE & FE). The FE users will be imported automatically into the configured storage pid.',
+    'description' => 'Shibboleth Authentication for TYPO3 CMS',
     'category' => 'services',
     'shy' => 0,
     'version' => '4.3.0',
@@ -24,7 +24,7 @@ $EM_CONF[$_EXTKEY] = [
     'CGLcompliance_note' => '',
     'constraints' => [
         'depends' => [
-            'typo3' => '8.7.0-8.99.99',
+            'typo3' => '10.4.0-10.4.99',
         ],
         'conflicts' => [],
         'suggests' => [],
