@@ -14,13 +14,15 @@ namespace Visol\ShibbolethAuth\Controller;
  *
  * The TYPO3 project - inspiring people to share!
  */
-
+use Psr\Http\Message\ResponseInterface;
+use TYPO3\CMS\Extbase\Http\ForwardResponse;
+use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\HttpUtility;
 
-class FrontendLoginController extends \TYPO3\CMS\Extbase\Mvc\Controller\ActionController
+class FrontendLoginController extends ActionController
 {
 
     /**
@@ -48,7 +50,7 @@ class FrontendLoginController extends \TYPO3\CMS\Extbase\Mvc\Controller\ActionCo
     /**
      * @throws \TYPO3\CMS\Extbase\Mvc\Exception\StopActionException
      */
-    public function indexAction()
+    public function indexAction(): ResponseInterface
     {
         $context = GeneralUtility::makeInstance(Context::class);
 
@@ -65,25 +67,26 @@ class FrontendLoginController extends \TYPO3\CMS\Extbase\Mvc\Controller\ActionCo
         if ($userIsLoggedIn) {
             $this->remoteUser = $context->getPropertyFromAspect('frontend.user', 'username');
             if (!empty($redirectUrl) || $this->getConfiguredRedirectPage()) {
-                $this->forward('loginSuccess');
+                return new ForwardResponse('loginSuccess');
             } else {
-                $this->forward('showLogout');
+                return new ForwardResponse('showLogout');
             }
         } else {
             if ($loginType === 'logout') {
-                $this->forward('logoutSuccess');
+                return new ForwardResponse('logoutSuccess');
             } elseif ($loginType === 'login') {
-                $this->forward('showLogin');
+                return new ForwardResponse('showLogin');
             } else {
-                $this->forward('showLogin');
+                return new ForwardResponse('showLogin');
             }
         }
+        return $this->htmlResponse();
     }
 
     /**
      * Display the Shibboleth login link
      */
-    public function showLoginAction()
+    public function showLoginAction(): ResponseInterface
     {
         $target = GeneralUtility::getIndpEnv('TYPO3_REQUEST_URL');
 
@@ -104,6 +107,7 @@ class FrontendLoginController extends \TYPO3\CMS\Extbase\Mvc\Controller\ActionCo
         $shibbolethLoginUri = $loginHandlerUrl . $queryStringSeparator . 'target=' . rawurlencode($target);
         $shibbolethLoginUri = GeneralUtility::sanitizeLocalUrl($shibbolethLoginUri);
         $this->view->assign('shibbolethLoginUri', $shibbolethLoginUri);
+        return $this->htmlResponse();
     }
 
     /**
@@ -111,7 +115,7 @@ class FrontendLoginController extends \TYPO3\CMS\Extbase\Mvc\Controller\ActionCo
      *
      * @return mixed
      */
-    public function loginSuccessAction()
+    public function loginSuccessAction(): ResponseInterface
     {
         $redirectUrl = GeneralUtility::_GP('redirect_url');
         $targetUrl = GeneralUtility::getIndpEnv('TYPO3_REQUEST_HOST') . $redirectUrl;
@@ -124,20 +128,23 @@ class FrontendLoginController extends \TYPO3\CMS\Extbase\Mvc\Controller\ActionCo
             $targetUrl = $this->uriBuilder->setTargetPageUid((int)$configuredRedirectPage)->setAbsoluteUriScheme($absoluteUriScheme)->setCreateAbsoluteUri(true)->build();
         }
         HttpUtility::redirect($targetUrl);
+        return $this->htmlResponse();
     }
 
     /**
      * Show logout after a successful login if no redirect URL was set
      */
-    public function showLogoutAction()
+    public function showLogoutAction(): ResponseInterface
     {
+        return $this->htmlResponse();
     }
 
-    public function logoutSuccessAction()
+    public function logoutSuccessAction(): ResponseInterface
     {
         $redirectUrl = $this->extensionConfiguration['logoutHandler'];
         $redirectUrl = GeneralUtility::sanitizeLocalUrl($redirectUrl);
         HttpUtility::redirect($redirectUrl);
+        return $this->htmlResponse();
     }
 
     protected function getConfiguredRedirectPage()
