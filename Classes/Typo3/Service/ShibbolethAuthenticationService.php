@@ -14,7 +14,9 @@ namespace Visol\ShibbolethAuth\Typo3\Service;
  *
  * The TYPO3 project - inspiring people to share!
  */
-
+use TYPO3\CMS\Core\Core\Environment;
+use TYPO3\CMS\Core\Http\ApplicationType;
+use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Backend\Exception;
 use TYPO3\CMS\Core\Authentication\AbstractAuthenticationService;
 use TYPO3\CMS\Core\Authentication\AbstractUserAuthentication;
@@ -60,12 +62,12 @@ class ShibbolethAuthenticationService extends AbstractAuthenticationService
      */
     public function initAuth($mode, $loginData, $authInfo, $pObj): void
     {
-        if (TYPO3_REQUESTTYPE & TYPO3_REQUESTTYPE_CLI) {
+        if (Environment::isCli()) {
             parent::initAuth($mode, $loginData, $authInfo, $pObj);
         }
 
         // bypass Shibboleth login if enableFE is 0
-        if (!($this->extensionConfiguration['enableFE']) && TYPO3_MODE == 'FE') {
+        if (!($this->extensionConfiguration['enableFE']) && ApplicationType::fromRequest($GLOBALS['TYPO3_REQUEST'])->isFrontend()) {
             parent::initAuth($mode, $loginData, $authInfo, $pObj);
         }
 
@@ -111,7 +113,7 @@ class ShibbolethAuthenticationService extends AbstractAuthenticationService
         }
 
         // Deny Backend login for non-Shibboleth authentication if onlyShibbolethFunc is set
-        if (!(TYPO3_REQUESTTYPE & TYPO3_REQUESTTYPE_CLI) && $this->authInfo['loginType'] === 'BE' && $this->extensionConfiguration['onlyShibbolethBE'] && empty($user)) {
+        if (!(Environment::isCli()) && $this->authInfo['loginType'] === 'BE' && $this->extensionConfiguration['onlyShibbolethBE'] && empty($user)) {
             // Implement your own error page
             if (is_array($GLOBALS['TYPO3_CONF_VARS']['EXTCONF'][$this->extKey]['onlyShibbolethFunc'])) {
                 foreach ($GLOBALS['TYPO3_CONF_VARS']['EXTCONF'][$this->extKey]['onlyShibbolethFunc'] as $_classRef) {
@@ -145,7 +147,7 @@ class ShibbolethAuthenticationService extends AbstractAuthenticationService
     {
         $OK = 100;
 
-        if (TYPO3_REQUESTTYPE & TYPO3_REQUESTTYPE_CLI) {
+        if (Environment::isCli()) {
             $OK = 100;
         } else {
             if (($this->isLoginTypeFrontend()) && !empty($this->login['uname'])) {
@@ -272,7 +274,7 @@ class ShibbolethAuthenticationService extends AbstractAuthenticationService
             $cookie = new Cookie(
                 'be_disableShibboleth',
                 '1',
-                $GLOBALS['EXEC_TIME'] + 3600, // 1 hour
+                GeneralUtility::makeInstance(Context::class)->getPropertyFromAspect('date', 'timestamp') + 3600, // 1 hour
                 GeneralUtility::getIndpEnv('TYPO3_SITE_PATH') . TYPO3_mainDir,
                 '',
                 $cookieSecure,

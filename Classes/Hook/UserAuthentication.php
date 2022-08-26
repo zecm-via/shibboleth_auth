@@ -24,7 +24,7 @@ class UserAuthentication
     {
         // Delete the Shibboleth session cookie
         foreach ($_COOKIE as $name => $value) {
-            if (StringUtility::beginsWith($name, '_shibsession_')) {
+            if (\str_starts_with($name, '_shibsession_')) {
                 setcookie($name, null, -1, '/');
                 break;
             }
