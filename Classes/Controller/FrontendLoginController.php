@@ -14,7 +14,6 @@ namespace Visol\ShibbolethAuth\Controller;
  *
  * The TYPO3 project - inspiring people to share!
  */
-use TYPO3\CMS\Extbase\Mvc\Exception\StopActionException;
 use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Extbase\Http\ForwardResponse;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
@@ -48,9 +47,6 @@ class FrontendLoginController extends ActionController
         }
     }
 
-    /**
-     * @throws StopActionException
-     */
     public function indexAction(): ResponseInterface
     {
         $context = GeneralUtility::makeInstance(Context::class);
@@ -81,7 +77,6 @@ class FrontendLoginController extends ActionController
                 return new ForwardResponse('showLogin');
             }
         }
-        return $this->htmlResponse();
     }
 
     /**
