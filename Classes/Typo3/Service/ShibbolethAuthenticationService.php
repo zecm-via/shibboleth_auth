@@ -14,6 +14,8 @@ namespace Visol\ShibbolethAuth\Typo3\Service;
  *
  * The TYPO3 project - inspiring people to share!
  */
+
+use Symfony\Component\HttpFoundation\Cookie;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Http\ApplicationType;
 use TYPO3\CMS\Core\Context\Context;
@@ -260,7 +262,7 @@ class ShibbolethAuthenticationService extends AbstractAuthenticationService
         }
         return implode(',', $frontendUserGroupUids);
     }
-  
+
     /**
      * @return boolean
      */
@@ -343,9 +345,9 @@ class ShibbolethAuthenticationService extends AbstractAuthenticationService
     {
         /** @var QueryBuilder $queryBuilder */
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(
-            $this->authInfo['db_groups']['table']
+            $this->authInfo['db_user']['table']
         );
-        $recordData = $queryBuilder->select('*')->from($this->authInfo['db_groups']['table'])->where(
+        $recordData = $queryBuilder->select('*')->from($this->authInfo['db_user']['table'])->where(
                 $queryBuilder->expr()->eq('title', $queryBuilder->createNamedParameter($title)),
                 $queryBuilder->expr()->eq('pid', $this->extensionConfiguration['storagePid']),
             )->execute()->fetchAssociative();
@@ -355,16 +357,16 @@ class ShibbolethAuthenticationService extends AbstractAuthenticationService
         }
 
         $databaseConnection = $this->getDatabaseConnectionPool()->getConnectionForTable(
-            $this->authInfo['db_groups']['table']
+            $this->authInfo['db_user']['table']
         );
         $databaseConnection->insert(
-            $this->authInfo['db_groups']['table'],
+            $this->authInfo['db_user']['table'],
             [
                 'pid' => $this->extensionConfiguration['storagePid'],
                 'title' => $title,
             ]
         );
-        return (int)$databaseConnection->lastInsertId($this->authInfo['db_groups']['table']);
+        return (int)$databaseConnection->lastInsertId($this->authInfo['db_user']['table']);
     }
 
     protected function getDatabaseConnectionPool(): ConnectionPool
