@@ -343,11 +343,13 @@ class ShibbolethAuthenticationService extends AbstractAuthenticationService
      */
     protected function getOrCreateFrontendUserGroupByTitleAndReturnUid(string $title): int
     {
+        $frontendUserGroupTable = 'fe_groups';
+
         /** @var QueryBuilder $queryBuilder */
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(
-            $this->authInfo['db_user']['table']
+            $frontendUserGroupTable
         );
-        $recordData = $queryBuilder->select('*')->from($this->authInfo['db_user']['table'])->where(
+        $recordData = $queryBuilder->select('*')->from($frontendUserGroupTable)->where(
                 $queryBuilder->expr()->eq('title', $queryBuilder->createNamedParameter($title)),
                 $queryBuilder->expr()->eq('pid', $this->extensionConfiguration['storagePid']),
             )->execute()->fetchAssociative();
@@ -357,16 +359,16 @@ class ShibbolethAuthenticationService extends AbstractAuthenticationService
         }
 
         $databaseConnection = $this->getDatabaseConnectionPool()->getConnectionForTable(
-            $this->authInfo['db_user']['table']
+            $frontendUserGroupTable
         );
         $databaseConnection->insert(
-            $this->authInfo['db_user']['table'],
+            $frontendUserGroupTable,
             [
                 'pid' => $this->extensionConfiguration['storagePid'],
                 'title' => $title,
             ]
         );
-        return (int)$databaseConnection->lastInsertId($this->authInfo['db_user']['table']);
+        return (int)$databaseConnection->lastInsertId($frontendUserGroupTable);
     }
 
     protected function getDatabaseConnectionPool(): ConnectionPool
