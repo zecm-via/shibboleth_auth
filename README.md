@@ -6,10 +6,16 @@ Fork of the TYPO3 extension shibboleth_auth to fix performance issues and shippi
 
 This extension enables the single sign-on based on Shibboleth for frontend and backend authentication. 
 
-Compatibility:
+## Compatibility and Maintenance
 
-* Version 5 works with TYPO3 10.4 LTS
-* Version 4 works with TYPO3 8.7 LTS. It is no longer maintained.
+This package is currently maintained for the following versions:
+
+| TYPO3 Version     | Package Version | Branch  | Maintained    |
+|-------------------|-----------------|---------|---------------|
+| TYPO3 11.5.x      | 6.x             | master  | Yes           |
+| TYPO3 10.4.x      | 5.x             | v5      | No            |
+| TYPO3 8.x         | 4.x             | v4      | No            |
+
 
 Prerequisites
 -------------
