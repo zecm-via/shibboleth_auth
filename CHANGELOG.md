@@ -1,3 +1,7 @@
+## 6.1.1 (2023-01-20)
+
+[BUGFIX] Apply HMAC-signing to login pid parameter
+
 ## 6.0.0 (2022-12-14)
 
 [TASK] Correctly look up and create frontend user groups
