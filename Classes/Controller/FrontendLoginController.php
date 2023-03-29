@@ -132,8 +132,9 @@ class FrontendLoginController extends ActionController
     /**
      * Show logout after a successful login if no redirect URL was set
      */
-    public function showLogoutAction()
+    public function showLogoutAction(): ResponseInterface
     {
+        return $this->htmlResponse();
     }
 
     public function logoutSuccessAction(): ResponseInterface

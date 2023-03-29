@@ -45,7 +45,7 @@ class ShibbolethLoginProvider implements LoginProviderInterface
         }
         $view->setTemplatePathAndFilename(GeneralUtility::getFileAbsFileName($template));
 
-        $target = GeneralUtility::getIndpEnv('TYPO3_REQUEST_HOST') . '/typo3';
+        $target = GeneralUtility::getIndpEnv('TYPO3_REQUEST_HOST') . '/typo3/?login_status=login';
         if ($extensionConfiguration['forceSSL'] && !GeneralUtility::getIndpEnv('TYPO3_SSL')) {
             $target = str_ireplace('http:', 'https:', $target);
         }
