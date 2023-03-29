@@ -7,8 +7,8 @@ enableFE = 0
 # cat=basic/enable; type=boolean; label=Auto Import: Enable Auto Import of Frontend Users
 enableAutoImport = 0
 
-# cat=basic/enable; type=boolean; label=BE_fetchUserIfNoSession: If this is enabled the service will always be called if there is no valid backend user session (needed for singleSignOn). If not then the service will only be called if the authentication process sees incoming data from a form.
-BE_fetchUserIfNoSession = 1
+# cat=basic/enable; type=boolean; label=BE_fetchUserIfNoSession: If this is enabled the service will always be called if there is no valid backend user session (needed for singleSignOn). If the parameter is not set, make sure that the returned URL from the SSO includes the parameter "login_status=login" in order to trigger the login process. Without this parameter, the service will only be invoked if incoming data from a form is detected during the authentication process.
+BE_fetchUserIfNoSession = 0
 
 # cat=basic/enable; type=boolean; label=FE_fetchUserIfNoSession: If this is enabled the service will always be called if there is no valid frontend user session (needed for singleSignOn). If not then the service will only be called if the authentication process sees incoming data from a form.
 FE_fetchUserIfNoSession = 0
