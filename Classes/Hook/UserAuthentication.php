@@ -20,7 +20,7 @@ use TYPO3\CMS\Core\Utility\StringUtility;
 class UserAuthentication
 {
 
-    public function backendLogoutHandler()
+    public function backendLogoutHandler(): void
     {
         // Delete the Shibboleth session cookie
         foreach ($_COOKIE as $name => $value) {

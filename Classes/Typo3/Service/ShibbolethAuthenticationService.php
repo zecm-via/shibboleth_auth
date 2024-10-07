@@ -15,10 +15,10 @@ namespace Visol\ShibbolethAuth\Typo3\Service;
  * The TYPO3 project - inspiring people to share!
  */
 
-use Symfony\Component\HttpFoundation\Cookie;
+use TYPO3\CMS\Core\Context\Context;
+use TYPO3\CMS\Core\Context\SecurityAspect;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Http\ApplicationType;
-use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Backend\Exception;
 use TYPO3\CMS\Core\Authentication\AbstractAuthenticationService;
 use TYPO3\CMS\Core\Authentication\AbstractUserAuthentication;
@@ -28,6 +28,7 @@ use TYPO3\CMS\Core\Crypto\Random;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
+use TYPO3\CMS\Core\Security\RequestToken;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 class ShibbolethAuthenticationService extends AbstractAuthenticationService
@@ -82,14 +83,28 @@ class ShibbolethAuthenticationService extends AbstractAuthenticationService
         }
     }
 
+    public function processLoginData(array &$loginData, $passwordTransmissionStrategy): int
+    {
+        if ($this->isShibbolethLogin() && !empty($this->remoteUser)) {
+            $context = GeneralUtility::makeInstance(Context::class);
+            $securityAspect = SecurityAspect::provideIn($context);
+            $securityAspect->setReceivedRequestToken(new RequestToken('core/user-auth/fe'));
+            $context->setAspect('security', $securityAspect);
+            return 201;
+        }
+
+        return 0;
+    }
+
     public function getUser()
     {
         $user = false;
-        if ($this->login['status'] == 'login' && $this->isShibbolethLogin() && empty($this->login['uname'])) {
+        if ($this->login['status'] === 'login' && $this->isShibbolethLogin() && empty($this->login['uname'])) {
             $user = $this->fetchUserRecord($this->remoteUser);
             if (!is_array($user) || empty($user)) {
-                if ($this->isLoginTypeFrontend(
-                    ) && !empty($this->remoteUser) && $this->extensionConfiguration['enableAutoImport']) {
+                if ($this->isLoginTypeFrontend()
+                    && !empty($this->remoteUser)
+                    && $this->extensionConfiguration['enableAutoImport']) {
                     $this->importFrontendUser();
                 } else {
                     $user = false;
@@ -329,10 +344,15 @@ class ShibbolethAuthenticationService extends AbstractAuthenticationService
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(
             $frontendUserGroupTable
         );
-        $recordData = $queryBuilder->select('*')->from($frontendUserGroupTable)->where(
+        $recordData = $queryBuilder
+            ->select('*')
+            ->from($frontendUserGroupTable)
+            ->where(
                 $queryBuilder->expr()->eq('title', $queryBuilder->createNamedParameter($title)),
-                $queryBuilder->expr()->eq('pid', $this->extensionConfiguration['storagePid']),
-            )->execute()->fetchAssociative();
+                $queryBuilder->expr()->eq('pid', $this->extensionConfiguration['storagePid'])
+            )
+            ->executeQuery()
+            ->fetchAssociative();
 
         if ($recordData) {
             return $recordData['uid'];
