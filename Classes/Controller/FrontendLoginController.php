@@ -16,6 +16,7 @@ namespace Visol\ShibbolethAuth\Controller;
  */
 use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Core\Configuration\Features;
+use TYPO3\CMS\Core\Http\RedirectResponse;
 use TYPO3\CMS\Extbase\Http\ForwardResponse;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
@@ -37,7 +38,7 @@ class FrontendLoginController extends ActionController
      */
     protected $remoteUser;
 
-    public function initializeAction()
+    public function initializeAction(): void
     {
         $this->extensionConfiguration = GeneralUtility::makeInstance(ExtensionConfiguration::class)->get('shibboleth_auth');
 
@@ -54,10 +55,10 @@ class FrontendLoginController extends ActionController
         $context = GeneralUtility::makeInstance(Context::class);
 
         // Login type
-        $loginType = GeneralUtility::_GP('logintype');
+        $loginType = $this->request->getParsedBody()['logintype'] ?? $this->request->getQueryParams()['logintype'] ?? null;
 
         // URL to redirect to
-        $redirectUrl = GeneralUtility::_GP('redirect_url');
+        $redirectUrl = $this->request->getParsedBody()['redirect_url'] ?? $this->request->getQueryParams()['redirect_url'] ?? null;
 
         // Is user logged in?
         $userIsLoggedIn = $context->getPropertyFromAspect('frontend.user', 'isLoggedIn');
@@ -91,18 +92,19 @@ class FrontendLoginController extends ActionController
         if ($this->extensionConfiguration['forceSSL'] && !GeneralUtility::getIndpEnv('TYPO3_SSL')) {
             $target = str_ireplace('http:', 'https:', $target);
             if (!preg_match('#["<>\\\]+#', $target)) {
-                HttpUtility::redirect($target);
+                return new RedirectResponse(303, $target);
             }
         }
 
-        // If the target page already includes an exclamation sign (e.g. non-RealURL page), we must use an ampersand here
-        $target .= !strpos($target, '?') ? '?' : '&';
-        $target .= 'logintype=login&pid=' . $this->resolveLoginStoragePid();
+        $targetUri = $this->uriBuilder->setRequest($this->request)->setArguments([
+            'logintype' => 'login',
+            'pid' => $this->resolveLoginStoragePid()
+        ]);
 
         $loginHandlerUrl = $this->extensionConfiguration['loginHandler'];
         $queryStringSeparator = !strpos($loginHandlerUrl, '?') ? '?' : '&';
 
-        $shibbolethLoginUri = $loginHandlerUrl . $queryStringSeparator . 'target=' . rawurlencode($target);
+        $shibbolethLoginUri = $loginHandlerUrl . $queryStringSeparator . 'target=' . rawurlencode($targetUri->build());
         $shibbolethLoginUri = GeneralUtility::sanitizeLocalUrl($shibbolethLoginUri);
         $this->view->assign('shibbolethLoginUri', $shibbolethLoginUri);
         return $this->htmlResponse();
@@ -115,7 +117,7 @@ class FrontendLoginController extends ActionController
      */
     public function loginSuccessAction(): ResponseInterface
     {
-        $redirectUrl = GeneralUtility::_GP('redirect_url');
+        $redirectUrl = $this->request->getParsedBody()['redirect_url'] ?? $this->request->getQueryParams()['redirect_url'] ?? null;
         $targetUrl = GeneralUtility::getIndpEnv('TYPO3_REQUEST_HOST') . $redirectUrl;
         $targetUrl = GeneralUtility::sanitizeLocalUrl($targetUrl);
 
@@ -125,8 +127,8 @@ class FrontendLoginController extends ActionController
             $absoluteUriScheme = (bool)$this->extensionConfiguration['forceSSL'] ? 'https' : 'http';
             $targetUrl = $this->uriBuilder->setTargetPageUid((int)$configuredRedirectPage)->setAbsoluteUriScheme($absoluteUriScheme)->setCreateAbsoluteUri(true)->build();
         }
-        HttpUtility::redirect($targetUrl);
-        return $this->htmlResponse();
+
+        return new RedirectResponse($targetUrl, 303);
     }
 
     /**
@@ -141,8 +143,8 @@ class FrontendLoginController extends ActionController
     {
         $redirectUrl = $this->extensionConfiguration['logoutHandler'];
         $redirectUrl = GeneralUtility::sanitizeLocalUrl($redirectUrl);
-        HttpUtility::redirect($redirectUrl);
-        return $this->htmlResponse();
+
+        return new RedirectResponse($redirectUrl, 303);
     }
 
     protected function getConfiguredRedirectPage()

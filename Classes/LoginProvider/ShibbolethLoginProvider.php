@@ -35,7 +35,7 @@ class ShibbolethLoginProvider implements LoginProviderInterface
      * @param PageRenderer $pageRenderer
      * @param LoginController $loginController
      */
-    public function render(StandaloneView $view, PageRenderer $pageRenderer, LoginController $loginController)
+    public function render(StandaloneView $view, PageRenderer $pageRenderer, LoginController $loginController): void
     {
         $extensionConfiguration = GeneralUtility::makeInstance(ExtensionConfiguration::class)->get('shibboleth_auth');
 
