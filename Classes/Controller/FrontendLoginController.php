@@ -117,13 +117,16 @@ class FrontendLoginController extends ActionController
      */
     public function loginSuccessAction(): ResponseInterface
     {
-        $redirectUrl = $this->request->getParsedBody()['redirect_url'] ?? $this->request->getQueryParams()['redirect_url'] ?? null;
-        $targetUrl = GeneralUtility::getIndpEnv('TYPO3_REQUEST_HOST') . $redirectUrl;
-        $targetUrl = GeneralUtility::sanitizeLocalUrl($targetUrl);
+        $targetUrl = $this->request->getParsedBody()['redirect_url'] ?? $this->request->getQueryParams()['redirect_url'] ?? null;
 
-        $configuredRedirectPage = $this->getConfiguredRedirectPage();
+        // Prefix local URL with the hostname
+        if (!empty($targetUrl) && is_null(parse_url($targetUrl, PHP_URL_SCHEME))) {
+            $targetUrl = GeneralUtility::getIndpEnv('TYPO3_REQUEST_HOST') . $targetUrl;
+            $targetUrl = GeneralUtility::sanitizeLocalUrl($targetUrl);
+        }
 
-        if (empty($redirectUrl) && !empty($configuredRedirectPage)) {
+        // If no redirectUrl was defined, or if it is invalid, use the configuredRedirectPage
+        if (empty($targetUrl) && $configuredRedirectPage = $this->getConfiguredRedirectPage()) {
             $absoluteUriScheme = (bool)$this->extensionConfiguration['forceSSL'] ? 'https' : 'http';
             $targetUrl = $this->uriBuilder->setTargetPageUid((int)$configuredRedirectPage)->setAbsoluteUriScheme($absoluteUriScheme)->setCreateAbsoluteUri(true)->build();
         }
