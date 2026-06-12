@@ -120,9 +120,12 @@ class FrontendLoginController extends ActionController
         )['referer'] ?? null;
 
         $targetUrl = $redirectUrl ?: $referer;
-        $typo3RequestHost = GeneralUtility::getIndpEnv('TYPO3_REQUEST_HOST');
-        $targetUrl = !str_starts_with($targetUrl, $typo3RequestHost) ? $typo3RequestHost . $targetUrl : $targetUrl;
-        $targetUrl = GeneralUtility::sanitizeLocalUrl($targetUrl);
+
+        // Prefix local URL with the hostname
+        if (!empty($targetUrl) && is_null(parse_url($targetUrl, PHP_URL_SCHEME))) {
+            $typo3RequestHost = GeneralUtility::getIndpEnv('TYPO3_REQUEST_HOST');
+            $targetUrl = GeneralUtility::sanitizeLocalUrl($typo3RequestHost . $targetUrl);
+        }
 
         $configuredRedirectPage = $this->getConfiguredRedirectPage();
 
